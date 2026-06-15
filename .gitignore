@@ -1,0 +1,35 @@
+# Environment variables
+.env
+
+# Mac system files
+.DS_Store
+
+# Node/Frontend
+node_modules/
+dist/
+build/
+npm-debug.log
+yarn-error.log
+
+# Python/Django/Backend
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+env/
+.venv/
+*.sqlite3
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+
+# Machine Learning / Large Files
+*.safetensors
+*.pth
+*.pt
+*.bin
+results/
+uniflow_brain/
+*.pdf

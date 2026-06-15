@@ -1,0 +1,35 @@
+@import "tailwindcss";
+
+@theme {
+  --color-navy-blue: #003366;
+  --color-slate-text: oklch(0.145 0 0);
+  --color-slate-secondary: oklch(0.446 0.03 256.802);
+  --color-slate-border: oklch(0.985 0.002 247.839);
+  --color-badge-bg: oklch(0.962 0.044 156.743);
+  --color-badge-text: oklch(0.527 0.154 150.069);
+
+  --font-inter: "Inter", ui-sans-serif, system-ui, sans-serif;
+}
+
+@layer base {
+  body {
+    @apply font-inter text-slate-text bg-white;
+  }
+}
+
+/* React PDF Highlighter Semantic Overrides */
+.Highlight__part {
+  transition: all 0.2s ease-in-out;
+}
+
+/* Unverified highlights: dashed purple underline */
+.Highlight__part.unverified-highlight {
+  background-color: rgba(168, 85, 247, 0.2) !important;
+  border-bottom: 2px dashed #9333ea !important;
+}
+
+/* Cited highlights: solid green background */
+.Highlight__part.cited-highlight {
+  background-color: rgba(34, 197, 94, 0.3) !important;
+  border-bottom: transparent !important;
+}

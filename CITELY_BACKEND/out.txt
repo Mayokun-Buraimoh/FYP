@@ -1,0 +1,101 @@
+✅ Found SEMANTIC_SCHOLAR_API_KEY (Starting with TBIU...)
+
+Processing Gaps...
+
+--- RAW JSON RESPONSE ---
+[
+  {
+    "sentence": "In recent years, deep learning has revolutionized natural language processing tasks such as translation and summarization.",
+    "intent": "Background",
+    "score": 0.9443,
+    "recommendations": [
+      {
+        "title": "A Comprehensive Survey on Graph Neural Networks",
+        "authors": "Zonghan Wu, Shirui Pan, Fengwen Chen, Guodong Long, Chengqi Zhang, Philip S. Yu",
+        "year": 2019,
+        "abstract": "Deep learning has revolutionized many machine learning tasks in recent years, ranging from image classification and video processing to speech recognition and natural language understanding. The data in these tasks are typically represented in the Euclidean space. However, there is an increasing number of applications, where data are generated from non-Euclidean domains and are represented as graphs with complex relationships and interdependency between objects. The complexity of graph data has imposed significant challenges on the existing machine learning algorithms. Recently, many studies on extending deep learning approaches for graph data have emerged. In this article, we provide a comprehensive overview of graph neural networks (GNNs) in data mining and machine learning fields. We propose a new taxonomy to divide the state-of-the-art GNNs into four categories, namely, recurrent GNNs, convolutional GNNs, graph autoencoders, and spatial\u2013temporal GNNs. We further discuss the applications of GNNs across various domains and summarize the open-source codes, benchmark data sets, and model evaluation of GNNs. Finally, we propose potential research directions in this rapidly growing field.",
+        "url": "https://doi.org/10.1109/tnnls.2020.2978386",
+        "isOpenAccess": true
+      },
+      {
+        "title": "AI-empowered financial stock: A survey",
+        "authors": "Wenjun Qi, Xiangwen Xue, Xinmin Tian",
+        "year": 2026,
+        "abstract": "In recent years, artificial intelligence (AI) technology has profoundly reshaped the financial stock sector, driving the intelligent transformation of quantitative trading, risk assessment, and investment decision-making. However, the deployment of AI continues to confront challenges such as data privacy concerns, algorithmic transparency issues, and market volatility. This paper provides a comprehensive survey of the transformative role of AI in the financial stock. AI technologies, including traditional machine learning, deep learning, natural language processing, and reinforcement learning, have revolutionized financial practices by enhancing prediction accuracy, enabling automated decision-making, and developing adaptive strategies for dynamic market environments. Then, this paper systematically reviews existing literature; research the key applications include stock market analysis, stock investment trading, and portfolio construction innovations; and identifies challenges such as data-centric challenges, model development and validation, and ethical and regulatory.",
+        "url": "",
+        "isOpenAccess": true
+      },
+      {
+        "title": "Deep Learning for Natural Language Processing: A Survey",
+        "authors": "E. O. Arkhangelskaya, S. I. Nikolenko",
+        "year": 2023,
+        "abstract": null,
+        "url": "https://link.springer.com/content/pdf/10.1007/s10958-023-06519-6.pdf",
+        "isOpenAccess": true
+      }
+    ]
+  },
+  {
+    "sentence": "We propose a novel method for fine-tuning language models on scientific text.",
+    "intent": "Uses",
+    "score": 0.8541,
+    "recommendations": [
+      {
+        "title": "ALoRA: Allocating Low-Rank Adaptation for Fine-tuning Large Language Models",
+        "authors": "Zequan Liu, Jiawen Lyn, Wei Zhu, Xing Tian, Yvette Graham",
+        "year": 2024,
+        "abstract": "Parameter-efficient fine-tuning (PEFT) is widely studied for its effectiveness and efficiency in the era of large language models. Low-rank adaptation (LoRA) has demonstrated commendable performance as a popular and representative method. However, it is implemented with a fixed intrinsic rank that might not be the ideal setting for the downstream tasks. Recognizing the need for more flexible downstream task adaptation, we extend the methodology of LoRA to an innovative approach we call allocating low-rank adaptation (ALoRA) that enables dynamic adjustments to the intrinsic rank during the adaptation process. First, we propose a novel method, AB-LoRA, that can effectively estimate the importance score of each LoRA rank. Second, guided by AB-LoRA, we gradually prune abundant and negatively impacting LoRA ranks and allocate the pruned LoRA budgets to important Transformer modules needing higher ranks. We have conducted experiments on various tasks, and the experimental results demonstrate that our ALoRA method can outperform the recent baselines with comparable tunable parameters.",
+        "url": "",
+        "isOpenAccess": true
+      },
+      {
+        "title": "Open-SQL Framework: Enhancing Text-to-SQL on Open-source Large Language Models",
+        "authors": "Xiaojun Chen, Tianle Wang, Tian Qiu, Jianbin Qin, Min Yang",
+        "year": 2024,
+        "abstract": "Despite the success of large language models (LLMs) in Text-to-SQL tasks, open-source LLMs encounter challenges in contextual understanding and response coherence. To tackle these issues, we present \\ours, a systematic methodology tailored for Text-to-SQL with open-source LLMs. Our contributions include a comprehensive evaluation of open-source LLMs in Text-to-SQL tasks, the \\openprompt strategy for effective question representation, and novel strategies for supervised fine-tuning. We explore the benefits of Chain-of-Thought in step-by-step inference and propose the \\openexample method for enhanced few-shot learning. Additionally, we introduce token-efficient techniques, such as \\textbf{Variable-length Open DB Schema}, \\textbf{Target Column Truncation}, and \\textbf{Example Column Truncation}, addressing challenges in large-scale databases. Our findings emphasize the need for further investigation into the impact of supervised fine-tuning on contextual learning capabilities. Remarkably, our method significantly improved Llama2-7B from 2.54\\% to 41.04\\% and Code Llama-7B from 14.54\\% to 48.24\\% on the BIRD-Dev dataset. Notably, the performance of Code Llama-7B surpassed GPT-4 (46.35\\%) on the BIRD-Dev dataset.",
+        "url": "",
+        "isOpenAccess": true
+      },
+      {
+        "title": "Structure-aware Domain Knowledge Injection for Large Language Models",
+        "authors": "Kai Liu, Ze Chen, Zhihang Fu, Wei Zhang, Rongxin Jiang, Fan Zhou, Yao-Shen Chen, Yue Wu, Jieping Ye",
+        "year": 2024,
+        "abstract": "This paper introduces a pioneering methodology, termed StructTuning, to efficiently transform foundation Large Language Models (LLMs) into domain specialists. It significantly reduces the training corpus needs to a mere 5% while achieving an impressive 100% of traditional knowledge injection performance. Motivated by structured human education, we propose a novel two-stage strategy for knowledge injection and alignment: Structure-aware Continual Pre-Training (SCPT) and Structure-aware Supervised Fine-Tuning (SSFT). In the SCPT phase, we automatically extract the domain knowledge taxonomy and reorganize the training corpora, enabling LLMs to effectively link textual segments to targeted knowledge points within the taxonomy. In the SSFT phase, we explicitly prompt models to elucidate the underlying knowledge structure in their outputs, leveraging the structured domain insight to address practical problems. Our ultimate method was extensively evaluated across model architectures and scales on LongBench and MMedBench datasets, demonstrating superior performance against other knowledge injection methods. We also explored our method's scalability across different training corpus sizes, laying the foundation to enhance domain-specific LLMs with better data utilization.",
+        "url": "",
+        "isOpenAccess": true
+      }
+    ]
+  },
+  {
+    "sentence": "As demonstrated by previous work, this approach yields significant improvements over baseline models.",
+    "intent": "Motivation",
+    "score": 0.3444,
+    "recommendations": [
+      {
+        "title": "Gradient Based Method for the Fusion of Lattice Quantizers",
+        "authors": "Liyuan Zhang, Hanzhong Cao, Jiaheng Li, Minyang Yu",
+        "year": 2025,
+        "abstract": "In practical applications, lattice quantizers leverage discrete lattice points to approximate arbitrary points in the lattice. An effective lattice quantizer significantly enhances both the accuracy and efficiency of these approximations. In the context of high-dimensional lattice quantization, previous work proposed utilizing low-dimensional optimal lattice quantizers and addressed the challenge of determining the optimal length ratio in orthogonal splicing. Notably, it was demonstrated that fixed length ratios and orthogonality yield suboptimal results when combining low-dimensional lattices. Building on this foundation, another approach employed gradient descent to identify optimal lattices, which inspired us to explore the use of neural networks to discover matrices that outperform those obtained from orthogonal splicing methods. We propose two novel approaches to tackle this problem: the Household Algorithm and the Matrix Exp Algorithm. Our results indicate that both the Household Algorithm and the Matrix Exp Algorithm achieve improvements in lattice quantizers across dimensions 13, 15, 17 to 19, 21, and 22. Moreover, the Matrix Exp Algorithm demonstrates superior efficacy in high-dimensional settings.",
+        "url": "",
+        "isOpenAccess": true
+      },
+      {
+        "title": "Modelo de Desarrollo Rural Sostenible desde los Principios de Inversi\u00f3n Responsable en Agricultura: Aplicaci\u00f3n al Centro de Desarrollo Regional El Mantaro - Grupo de Acci\u00f3n Local Jauja, en Per\u00fa",
+        "authors": "Ronald Jim\u00e9nez Aliaga",
+        "year": null,
+        "abstract": "Sustainable development remains a priority for rural populations, who represent 43% of the world's population and suffer the highest rates of poverty and inequality. The research addresses the global challenge of sustainable rural development, particularly relevant in Peru, where rural areas face significant poverty and inequality despite previous interventions. Traditional top-down approaches and institutional fragmentation have proven insufficient to solve the problems in Peru. \n\nThe research proposes a novel model for sustainable rural development, based on conceptual elements that have demonstrated successful international experiences such as the Working With People (WWP) metamodel and the LEADER (Liaison between Activities for the Development of Rural Economies) approach, and incorporating the Principles for Responsible Investment in Agriculture and Food Systems (CFS-RAI) as a guide for responsible investment. \n\nThe main contribution is the design and implementation of a sustainable rural development model that synergistically integrates four key conceptual foundations: the principles of CFS-RAI, the WWP metamodel from a social and people-centered learning perspective, the LEADER approach for organized local participation through Local Action Groups (LAGs), and the project management competencies of the International Project Management Association (IPMA) for efficient and responsible project implementation. The Sustainable Rural Development Model innovatively incorporates the CFS-RAI principles around a LAG as a central organizational element, supported by an interdisciplinary technical team in partnership with the University. \n\nThe application is carried out in the context of Peru, from the Regional Development Center (RDC) El Mantaro of the National University of San Marcos (UNMSM), which promoted the creation of the Jauja LAG, and then established a link to support local sustainable rural development with an interdisciplinary technical team, the result of an alliance of three universities. \n\nThe implementation of the model, after eight years of work, has yielded results and impacts for 210 beneficiary families of the Jauja LAG, whose performance has improved thanks to the training and effective management of the first projects that address priority problems in rural Jauja. Furthermore, the impacts include the innovative creation of the Jauja LAG and the formation of an interdisciplinary technical team with skills for project formulation and management based on the principles of CFS-RAI. Among the most effective projects addressing local priorities are the improvement of the guinea pig value chain, linking universities and producers' associations. \n\nLikewise, the model has attributes that can extend its application to other rural contexts. Its replicability is expected to expand in other areas, and it is identified as a line of future research given the valuable lessons learned from Jauja.\n\nRESUMEN\n\nEl desarrollo sostenible sigue siendo prioritario para las poblaciones rurales, que representa el 43% de la poblaci\u00f3n mundial y padecen los mayores \u00edndices de pobreza y desigualdad. La investigaci\u00f3n aborda el desaf\u00edo global del desarrollo rural sostenible, particularmente relevante en Per\u00fa, donde las \u00e1reas rurales enfrentan una pobreza y desigualdad significativas a pesar de las intervenciones anteriores. Los enfoques tradicionales de arriba hacia abajo y la fragmentaci\u00f3n institucional han demostrado ser insuficientes para solucionar los problemas en el Per\u00fa. \n\nLa investigaci\u00f3n propone un modelo novedoso para el desarrollo rural sostenible, basado en elementos conceptuales que vienen mostrando experiencias internacionales exitosas como el metamodelo Working With People (WWP) y el enfoque LEADER (Liaison entre les Activit\u00e9s de D\u00e9veloppement de l'\u00c9conomie Rurale) e incorporando los Principios de Inversi\u00f3n Responsable en Agricultura y los Sistemas Alimentarios (CSA-IRA) como gu\u00eda para la inversi\u00f3n responsable. \n\nLa contribuci\u00f3n principal es el dise\u00f1o y la aplicaci\u00f3n de un modelo de desarrollo rural sostenible que integra sin\u00e9rgicamente cuatro bases conceptuales clave: los principios de CSA-IRA, el metamodelo WWP desde el aprendizaje social y centrado en las personas, el enfoque LEADER para la participaci\u00f3n local organizada a trav\u00e9s del Grupo de Acci\u00f3n Local (GAL) y las competencias de direcci\u00f3n de proyectos de la Asociaci\u00f3n Internacional en Gesti\u00f3n de Proyectos (IPMA) para la ejecuci\u00f3n de proyectos de forma eficiente y responsable. El Modelo de Desarrollo Rural Sostenible incorpora de forma innovadora los principios CSA-IRA en torno a un GAL como elemento organizativo central, apoyado por un equipo t\u00e9cnico interdisciplinar en alianza con la Universidad. \n\nLa aplicaci\u00f3n se realiza en el contexto del Per\u00fa, desde el Centro de Desarrollo Regional (CDR) El Mantaro de la Universidad Nacional Mayor de San Marcos (UNMSM), que promovi\u00f3 la creaci\u00f3n del GAL Jauja, y luego estableci\u00f3 un v\u00ednculo para respaldar el desarrollo rural sostenible local con un equipo t\u00e9cnico interdisciplinario, resultado de la alianza de tres universidades. \n\nLa implementaci\u00f3n del modelo tras ocho a\u00f1os de trabajo ha dado resultados e impactos en 210 familias beneficiarias del GAL Jauja, quienes vienen mejorando su desempe\u00f1o gracias a la formaci\u00f3n y la buena gesti\u00f3n de los primeros proyectos en correspondencia a los problemas prioritarios de la ruralidad de Jauja. Adem\u00e1s, entre los impactos se incluyen la creaci\u00f3n novedosa del GAL-Jauja y la formaci\u00f3n de un equipo t\u00e9cnico interdisciplinario con competencias para la formulaci\u00f3n y gesti\u00f3n de proyectos desde los principios de CSA-IRA. Entre los proyectos m\u00e1s efectivos que abordan prioridades locales destacan la mejora de la cadena de valor del cuy en vinculaci\u00f3n universidad-asociaci\u00f3n de productores. \n\nAs\u00ed mismo, el modelo posee atributos que pueden hacer extensiva su aplicaci\u00f3n en otros contextos rurales. La replicabilidad se espera que evolucione en otras \u00e1reas y se identifica como una l\u00ednea de investigaci\u00f3n futura por las lecciones valiosas desde Jauja.",
+        "url": "",
+        "isOpenAccess": true
+      },
+      {
+        "title": "Efficient , Highly Productive Hydrogen Production from Glucose Annual Report 5 / 1 / 12 to 4 / 30 / 13",
+        "authors": "J. Swartz, Franklin Lu, M. Rohovie, S. Liong",
+        "year": 2013,
+        "abstract": null,
+        "url": "",
+        "isOpenAccess": true
+      }
+    ]
+  }
+]
+-------------------------

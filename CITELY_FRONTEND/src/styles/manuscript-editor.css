@@ -1,0 +1,52 @@
+.manuscript-prose {
+    font-size: 17px;
+    line-height: 1.75;
+    color: #1e293b;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    hyphens: auto;
+}
+
+.manuscript-prose p,
+.manuscript-prose li,
+.manuscript-prose td,
+.manuscript-prose th {
+    overflow-wrap: break-word;
+    word-break: break-word;
+}
+
+.manuscript-prose a {
+    overflow-wrap: anywhere;
+    word-break: break-all;
+}
+
+.manuscript-editable:empty::before {
+    content: 'Start writing or wait for analysis to import formatted text from your PDF…';
+    color: #94a3b8;
+    pointer-events: none;
+}
+
+.manuscript-prose p {
+    margin: 0 0 0.75em;
+}
+
+.manuscript-prose h2,
+.manuscript-prose h3 {
+    font-weight: 700;
+    margin: 1.25em 0 0.5em;
+    color: #0f172a;
+}
+
+.manuscript-prose h3 {
+    font-size: 1.1rem;
+}
+
+.manuscript-prose strong {
+    font-weight: 700;
+}
+
+.manuscript-sentence-flash {
+    background-color: rgba(59, 130, 246, 0.28);
+    border-radius: 2px;
+    transition: background-color 0.4s ease;
+}
