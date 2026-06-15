@@ -14,3 +14,7 @@ dj-database-url
 gunicorn
 whitenoise
 shortuuid
+PyMuPDF
+nltk
+transformers
+torch
