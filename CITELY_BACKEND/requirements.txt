@@ -1,3 +1,15 @@
+Django>=4.2
+djangorestframework
+djangorestframework-simplejwt
+django-cors-headers
+drf-spectacular
+django-jazzmin
+python-dotenv
 beautifulsoup4>=4.14
 python-docx>=1.2
 openai>=1.0.0
+requests
+psycopg2-binary
+dj-database-url
+gunicorn
+whitenoise
