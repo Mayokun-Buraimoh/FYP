@@ -16,3 +16,5 @@ whitenoise
 shortuuid
 PyMuPDF
 nltk
+transformers
+torch

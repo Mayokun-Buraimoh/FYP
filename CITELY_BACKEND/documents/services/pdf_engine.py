@@ -4,6 +4,8 @@ import re
 import html as html_module
 import fitz  # PyMuPDF
 import nltk
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
+import torch
 import json
 
 # Ensure necessary NLTK data is available
@@ -39,7 +41,36 @@ def configure_nltk_tokenizer():
 
 NLTK_TOKENIZER = configure_nltk_tokenizer()
 
-# Local models removed for deployment to prevent OOM errors.
+# We load the model lazily to avoid heavy initialization on app startup if not needed
+_MODEL = None
+_TOKENIZER = None
+_LABEL_MAPPING = None
+_DEVICE = None
+
+def get_model():
+    global _MODEL, _TOKENIZER, _LABEL_MAPPING, _DEVICE
+    if _MODEL is None:
+        model_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "uniflow_brain")
+        
+        if not os.path.exists(model_dir):
+            raise FileNotFoundError(f"Model directory not found at: {model_dir}")
+        
+        print(f"Loading SciBERT model from {model_dir}...", file=sys.stderr)
+        _TOKENIZER = AutoTokenizer.from_pretrained(model_dir)
+        _MODEL = AutoModelForSequenceClassification.from_pretrained(model_dir)
+
+        # M4 Mac GPU
+        _DEVICE = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
+        print(f"Running model on: {_DEVICE}", file=sys.stderr)
+        _MODEL.to(_DEVICE)
+        _MODEL.eval()
+
+        mapping_path = os.path.join(model_dir, "label_mapping.json")
+        if os.path.exists(mapping_path):
+            with open(mapping_path, "r") as f:
+                _LABEL_MAPPING = json.load(f)
+    
+    return _MODEL, _TOKENIZER, _LABEL_MAPPING, _DEVICE
 
 def clean_for_ai(text):
     """Clean the text for AI classification while keeping original for display."""
@@ -303,32 +334,43 @@ def extract_manuscript_html(pdf_file_path_or_bytes):
 
 def detect_gaps(sentence_objects):
     """
-    Detect citation gaps using heuristics instead of heavy local ML models 
-    to prevent out-of-memory errors on Render.
+    Detect citation gaps in a list of sentence objects.
     """
-    results = []
+    model, tokenizer, label_mapping, device = get_model()
     
-    for obj in sentence_objects:
-        text = obj.get("clean_text", obj.get("text", "")).lower()
+    results = []
+    # Use clean_text for AI if available, otherwise fallback to text
+    sentences_for_ai = [obj.get("clean_text", obj["text"]) for obj in sentence_objects]
+    
+    # Process in batches to avoid OOM
+    batch_size = 16
+    for i in range(0, len(sentences_for_ai), batch_size):
+        batch_sentences = sentences_for_ai[i:i + batch_size]
+        batch_objects = sentence_objects[i:i + batch_size]
         
-        # Simple heuristic for intent
-        if any(w in text for w in ["we propose", "in this paper", "our approach", "we present", "method"]):
-            intent = "Methodology"
-            score = 0.85
-        elif any(w in text for w in ["result", "show", "demonstrate", "observe", "find"]):
-            intent = "Result"
-            score = 0.80
-        elif any(w in text for w in ["previous", "past", "literature", "shown", "known", "established"]):
-            intent = "Background"
-            score = 0.90
-        else:
-            intent = "Background"
-            score = 0.60
+        inputs = tokenizer(batch_sentences, return_tensors="pt", padding=True, truncation=True, max_length=128)
+        inputs = {k: v.to(device) for k, v in inputs.items()}
+        
+        with torch.no_grad():
+            outputs = model(**inputs)
+            logits = outputs.logits
+            probs = torch.nn.functional.softmax(logits, dim=-1)
             
-        new_obj = obj.copy()
-        new_obj["sentence"] = new_obj.pop("text", "")
-        new_obj["intent"] = intent
-        new_obj["score"] = score
-        results.append(new_obj)
-        
+            top_probs, top_classes = torch.max(probs, dim=-1)
+            
+            top_probs = top_probs.cpu().numpy()
+            top_classes = top_classes.cpu().numpy()
+            
+            for j, (pred_class, score) in enumerate(zip(top_classes, top_probs)):
+                intent = label_mapping[str(pred_class)] if label_mapping else str(pred_class)
+                
+                # Merge AI results with position metadata
+                obj = batch_objects[j].copy()
+                obj.update({
+                    "sentence": obj.pop("text"),
+                    "intent": intent,
+                    "score": float(score)
+                })
+                results.append(obj)
+                
     return results
