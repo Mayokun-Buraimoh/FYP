@@ -11,10 +11,10 @@ When a user uploads a PDF, the document is parsed into individual sentences usin
 * **The Role:** The SciBERT model acts as the *Intent Classifier*. It analyzes every sentence locally using PyTorch and determines **if** a citation is missing, and **what kind** of citation it is (e.g., *Methodology, Background, Result*). 
 * **The Advantage:** This is a highly specialized task. A massive general LLM is too slow and computationally expensive to read every single sentence of a 20-page PDF to find structural gaps. The specialized SciBERT model performs this domain-specific classification quickly and efficiently.
 
-### 2. Phase Two: Semantic Search & Retrieval (OpenAI Integration)
-Once the SciBERT model identifies a "citation gap" and tags it with an intent, it passes that metadata to the OpenAI integration component (`api_client.py`).
-* **The Role:** OpenAI acts as the *Semantic Reasoner*. It takes the flagged sentence and the SciBERT intent tag, and understands the deep semantic context of the academic claim.
-* **The Advantage:** Instead of relying on an LLM to hallucinate fake papers directly from its weights, OpenAI is used to generate highly specific search queries based on the sentence's context. It uses these queries to search real academic databases (like OpenAlex, Crossref, or Semantic Scholar) to retrieve actual, verified real-world papers.
+### 2. Phase Two: Semantic Querying & Retrieval (OpenAI Integration)
+Once the SciBERT model identifies a "citation gap" and tags it with a specific intent, it passes that critical metadata to the OpenAI integration component (`api_client.py`).
+* **The Role:** OpenAI acts as the *Semantic Reasoner*. It takes both the flagged sentence AND the local SciBERT intent tag (e.g., "Methodology"), using them together to deeply understand the context of the academic claim.
+* **The Advantage (Intent-Driven Querying):** Instead of relying on an LLM to hallucinate fake papers, the system uses OpenAI to generate highly specific search queries. Crucially, these queries are shaped by the local identification—for example, if SciBERT identified a "Methodology" gap, OpenAI crafts a query tailored to find papers presenting similar methods. It uses these targeted queries to search real academic databases (like OpenAlex, Crossref, or Semantic Scholar) to retrieve actual, verified real-world papers.
 
 ### 3. Phase Three: Ranking & Recommendation (OpenAI Integration)
 Once the external academic databases return a list of potential candidate papers (e.g., 20 papers), OpenAI is utilized a second time for evaluation.
