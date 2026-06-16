@@ -18,3 +18,4 @@ PyMuPDF
 nltk
 transformers
 torch
+sentence-transformers

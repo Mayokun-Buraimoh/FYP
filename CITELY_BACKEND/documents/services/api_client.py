@@ -57,6 +57,20 @@ PAPER_SEARCH_LIMIT = _env_int("PAPER_SEARCH_LIMIT", 100)
 PAPER_RECOMMENDATIONS_TOP_K = _env_int("PAPER_RECOMMENDATIONS_TOP_K", 10)
 PAPER_GAPS_TOP_K = _env_int("PAPER_GAPS_TOP_K", 5)
 
+_SEMANTIC_MODEL = None
+
+def get_semantic_model():
+    global _SEMANTIC_MODEL
+    if _SEMANTIC_MODEL is None:
+        try:
+            from sentence_transformers import SentenceTransformer
+            print("Loading local semantic model (all-MiniLM-L6-v2)...")
+            _SEMANTIC_MODEL = SentenceTransformer('all-MiniLM-L6-v2')
+        except Exception as e:
+            print(f"Error loading semantic model: {e}")
+            _SEMANTIC_MODEL = "FAILED"
+    return _SEMANTIC_MODEL if _SEMANTIC_MODEL != "FAILED" else None
+
 
 def _contact_email():
     return (
@@ -721,114 +735,71 @@ def _rank_recommendations(recommendations, sentence, intent, domain_hints=None, 
     if not recommendations:
         return []
 
-    client = get_openai_client()
-    if client:
-        try:
-            candidates = recommendations[:20]
-            candidates_formatted = []
-            for idx, rec in enumerate(candidates):
-                candidates_formatted.append(
-                    f"ID: {idx}\nTitle: {rec.get('title')}\nAbstract: {rec.get('abstract') or 'N/A'}\n"
-                )
-            candidates_text = "\n---\n".join(candidates_formatted)
-
-            prompt = f"""You are an expert academic peer-reviewer. Your task is to rate the relevance of candidate papers to a specific sentence in a draft manuscript.
-
-Highlighted Sentence to cite:
-"{sentence}"
-"""
-            if context:
-                prompt += f'\nSurrounding Context:\n"{context}"\n'
-
-            prompt += f"""
-Candidate Papers:
-{candidates_text}
-
-Instructions:
-For each candidate paper, assess if it is semantically related to the highlighted sentence and could serve as a valid citation. Provide a score from 0 to 10 for each candidate (10 being highly relevant and supportive, 0 being completely irrelevant).
-Format your output as a valid JSON object mapping the candidate ID (as a string) to the integer score, like this:
-{{
-  "0": 8,
-  "1": 2,
-  ...
-}}
-Do NOT output any other text, reasoning, or markdown code blocks. Output ONLY the JSON block.
-"""
-            response = client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[
-                    {"role": "system", "content": "You are a helpful academic paper reviewer."},
-                    {"role": "user", "content": prompt}
-                ],
-                max_tokens=200,
-                temperature=0.0
-            )
-            output = response.choices[0].message.content.strip()
-            if output.startswith("```"):
-                output = re.sub(r"^```(?:json)?\n", "", output)
-                output = re.sub(r"\n```$", "", output)
-
-            scores = json.loads(output)
-
-            ranked_candidates = []
-            for idx, rec in enumerate(candidates):
-                score = float(scores.get(str(idx), scores.get(idx, 0)))
-                rec_copy = rec.copy()
-                rec_copy["matchScore"] = score
-                ranked_candidates.append((score, rec_copy))
-
-            ranked_candidates.sort(key=lambda x: x[0], reverse=True)
-
-            rated_recs = [item[1] for item in ranked_candidates]
-            remaining = [r for r in recommendations if r not in candidates]
-            if remaining:
-                sentence_keywords = [w for w in _tokenize(sentence) if w not in METHODOLOGY_HEAVY_TERMS][:8]
-                hints = domain_hints or []
-                remaining_ranked = sorted(
-                    remaining,
-                    key=lambda r: _recommendation_relevance_score(r, sentence_keywords, hints, sentence=sentence),
-                    reverse=True
-                )
-                rated_recs.extend(remaining_ranked)
-
-            return rated_recs[:PAPER_RECOMMENDATIONS_TOP_K]
-
-        except Exception as e:
-            print(f"OpenAI reranking failed: {e}. Falling back to default scoring.")
-
-    sentence = _sanitize_sentence(sentence)
-    sentence_keywords = [w for w in _tokenize(sentence) if w not in METHODOLOGY_HEAVY_TERMS][:8]
+    sentence_clean = _sanitize_sentence(sentence)
+    sentence_keywords = [w for w in _tokenize(sentence_clean) if w not in METHODOLOGY_HEAVY_TERMS][:8]
     hints = domain_hints or []
-    ranked = sorted(
-        recommendations,
-        key=lambda rec: _recommendation_relevance_score(
-            rec, sentence_keywords, hints, sentence=sentence
-        ),
-        reverse=True,
-    )
 
-    low_sent = sentence.lower()
-    is_dss_context = "decision support" in low_sent or re.search(r"\bdss\b", low_sent)
-    if is_dss_context:
-        def _mentions_dss(rec):
-            blob = f"{rec.get('title') or ''} {rec.get('abstract') or ''}".lower()
-            return "decision support" in blob or re.search(r"\bdss\b", blob)
+    model = get_semantic_model()
+    
+    if not model:
+        # Fallback to pure heuristic if model fails to load
+        print("Semantic model unavailable, falling back to heuristic scoring.")
+        ranked = sorted(
+            recommendations,
+            key=lambda r: _recommendation_relevance_score(r, sentence_keywords, hints, sentence=sentence_clean),
+            reverse=True
+        )
+        return ranked[:PAPER_RECOMMENDATIONS_TOP_K]
 
-        dss_first = [rec for rec in ranked if _mentions_dss(rec)]
-        if dss_first:
-            others = [rec for rec in ranked if rec not in dss_first]
-            ranked = dss_first + others
+    try:
+        from sentence_transformers import util
+        
+        # Prepare the query
+        query_text = sentence_clean
+        if context:
+            # Add some context weight
+            query_text = f"{context} {sentence_clean}"
+            
+        query_emb = model.encode(query_text, convert_to_tensor=True)
+        
+        # Prepare document texts (title + abstract)
+        doc_texts = []
+        for rec in recommendations:
+            title = rec.get("title") or ""
+            abstract = rec.get("abstract") or ""
+            doc_texts.append(f"{title} {abstract}")
+            
+        doc_embs = model.encode(doc_texts, convert_to_tensor=True)
+        
+        # Compute cosine similarities
+        cosine_scores = util.cos_sim(query_emb, doc_embs)[0].cpu().tolist()
+        
+        ranked_candidates = []
+        for idx, rec in enumerate(recommendations):
+            base_score = cosine_scores[idx] * 100 # Scale to 0-100
+            
+            # Boost highly influential papers slightly
+            influence = rec.get("influentialCitationCount", 0) or 0
+            influence_boost = min(influence, 100) * 0.05
+            
+            final_score = base_score + influence_boost
+            
+            rec_copy = rec.copy()
+            rec_copy["matchScore"] = round(final_score, 2)
+            ranked_candidates.append(rec_copy)
+            
+        ranked_candidates.sort(key=lambda x: x["matchScore"], reverse=True)
+        return ranked_candidates[:PAPER_RECOMMENDATIONS_TOP_K]
+        
+    except Exception as e:
+        print(f"Semantic ranking failed: {e}. Falling back to heuristic scoring.")
+        ranked = sorted(
+            recommendations,
+            key=lambda r: _recommendation_relevance_score(r, sentence_keywords, hints, sentence=sentence_clean),
+            reverse=True
+        )
+        return ranked[:PAPER_RECOMMENDATIONS_TOP_K]
 
-    if sentence_keywords:
-        filtered = [
-            rec
-            for rec in ranked
-            if _recommendation_relevance_score(rec, sentence_keywords, hints, sentence=sentence) > 0
-        ]
-        if filtered:
-            ranked = filtered
-
-    return ranked[:PAPER_RECOMMENDATIONS_TOP_K]
 
 
 def classify_sentence(sentence):
