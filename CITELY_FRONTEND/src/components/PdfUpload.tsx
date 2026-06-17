@@ -27,8 +27,8 @@ export function PdfUpload() {
     });
 
     const uploadFile = async (file: File) => {
-        if (!file.name.endsWith('.pdf')) {
-            setError('Only PDF files are accepted.');
+        if (!file.name.endsWith('.pdf') && !file.name.endsWith('.docx')) {
+            setError('Only PDF and Word (.docx) files are accepted.');
             return;
         }
 
@@ -38,7 +38,7 @@ export function PdfUpload() {
 
         const formData = new FormData();
         formData.append('file', file);
-        formData.append('title', file.name.replace('.pdf', ''));
+        formData.append('title', file.name.replace('.pdf', '').replace('.docx', ''));
 
         try {
             const res = await fetch(`${API_BASE}/documents/`, {
@@ -81,7 +81,7 @@ export function PdfUpload() {
     return (
         <div className="flex-1 p-8 overflow-y-auto bg-slate-50">
             <h2 className="text-2xl font-bold text-[#1e3a6e] mb-1">Upload Papers</h2>
-            <p className="text-sm text-slate-500 mb-8">Upload PDFs to analyse and extract citations</p>
+            <p className="text-sm text-slate-500 mb-8">Upload PDFs or Word Documents to analyse and extract citations</p>
 
             {/* Drop Zone */}
             <div
@@ -99,7 +99,7 @@ export function PdfUpload() {
                 <input
                     ref={inputRef}
                     type="file"
-                    accept=".pdf"
+                    accept=".pdf,.docx"
                     className="hidden"
                     onChange={handleFileInput}
                 />
@@ -113,9 +113,9 @@ export function PdfUpload() {
                     <>
                         <UploadCloud className="w-12 h-12 text-slate-400 mb-4" />
                         <p className="text-[15px] font-semibold text-slate-700">
-                            Drag & drop your PDF here, or <span className="text-[#1e3a6e] underline">browse</span>
+                            Drag & drop your file here, or <span className="text-[#1e3a6e] underline">browse</span>
                         </p>
-                        <p className="text-xs text-slate-400 mt-2">Only .pdf files are accepted</p>
+                        <p className="text-xs text-slate-400 mt-2">Only .pdf and .docx files are accepted</p>
                     </>
                 )}
             </div>
@@ -137,7 +137,7 @@ export function PdfUpload() {
             {documents.length > 0 && (
                 <div>
                     <h3 className="text-[13px] font-semibold text-slate-500 uppercase tracking-widest mb-3">
-                        Uploaded PDFs ({documents.length})
+                        Uploaded Documents ({documents.length})
                     </h3>
                     <ul className="space-y-2">
                         {documents.map(doc => (

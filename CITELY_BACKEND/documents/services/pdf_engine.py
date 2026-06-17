@@ -343,7 +343,7 @@ def detect_gaps(sentence_objects):
     sentences_for_ai = [obj.get("clean_text", obj["text"]) for obj in sentence_objects]
     
     # Process in batches to avoid OOM
-    batch_size = 16
+    batch_size = 64
     for i in range(0, len(sentences_for_ai), batch_size):
         batch_sentences = sentences_for_ai[i:i + batch_size]
         batch_objects = sentence_objects[i:i + batch_size]
@@ -374,3 +374,46 @@ def detect_gaps(sentence_objects):
                 results.append(obj)
                 
     return results
+
+
+def extract_manuscript_from_blocks(pdf_file_path_or_bytes):
+    """
+    Fallback method to extract manuscript content as continuous blocks (paragraphs)
+    instead of single sentences, preventing the scattered list effect.
+    """
+    if isinstance(pdf_file_path_or_bytes, bytes):
+        doc = fitz.open(stream=pdf_file_path_or_bytes, filetype="pdf")
+    else:
+        doc = fitz.open(pdf_file_path_or_bytes)
+
+    paragraphs = []
+    
+    for page in doc:
+        # get_text("blocks") returns tuples: (x0, y0, x1, y1, "text", block_no, block_type)
+        # PyMuPDF naturally returns blocks in reading order (e.g. down column A, then down column B).
+        blocks = page.get_text("blocks")
+        
+        for block in blocks:
+            # block_type == 0 means text
+            if block[6] == 0:
+                text = block[4].strip()
+                # Skip tiny artifacts (like single numbers, very short headers)
+                if len(text) < 15 and not any(c.isalpha() for c in text):
+                    continue
+                
+                # Clean up hyphenation and unnecessary line breaks inside the block
+                # but keep the paragraph intact.
+                text = re.sub(r'-\n\s*', '', text)
+                text = re.sub(r'\s*\n\s*', ' ', text)
+                text = re.sub(r'\s+', ' ', text).strip()
+                
+                if text:
+                    paragraphs.append(text)
+                    
+    doc.close()
+    
+    if not paragraphs:
+        return ""
+        
+    return "\n\n".join(paragraphs)
+

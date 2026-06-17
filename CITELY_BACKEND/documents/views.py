@@ -10,10 +10,17 @@ from .models import Document, Citation, Recommendation, InsertedCitation
 from .serializers import (
     DocumentSerializer,
     DocumentUpdateSerializer,
+    DocumentListSerializer,
     InsertedCitationSerializer,
     RecommendationSerializer,
 )
-from .services.pdf_engine import extract_sentences, detect_gaps, extract_manuscript_html
+from .services.pdf_engine import (
+    extract_sentences, 
+    detect_gaps, 
+    extract_manuscript_html,
+    extract_manuscript_from_blocks
+)
+from .services.docx_engine import extract_docx_sentences, extract_manuscript_html_from_docx
 from .services.manuscript_export import build_manuscript_docx
 from .services.reference_list import (
     build_merged_reference_list,
@@ -49,28 +56,34 @@ def _build_manuscript_from_sentence_objects(sentence_objects):
     return [{"id": str(uuid.uuid4()), "text": plain}]
 
 
-def _build_manuscript_paragraphs(file_bytes, sentence_objects):
+def _build_manuscript_paragraphs(file_bytes, sentence_objects, file_name=None):
     if file_bytes:
-        try:
-            html_content = extract_manuscript_html(file_bytes)
-            if html_content and html_content.strip():
-                html_content = normalize_manuscript_html(html_content)
-                return [
-                    {
-                        "id": str(uuid.uuid4()),
-                        "html": html_content,
-                        "text": _html_to_plain_text(html_content),
-                    }
-                ]
-        except Exception:
-            pass
+        if file_name and file_name.lower().endswith(".docx"):
+            try:
+                html = extract_manuscript_html_from_docx(file_bytes)
+                if html:
+                    return [{"id": str(uuid.uuid4()), "html": html, "text": _html_to_plain_text(html)}]
+            except Exception as e:
+                print(f"DOCX HTML extraction failed: {e}")
+                pass
+        else:
+            try:
+                # Use the robust block extraction as the primary method
+                text = extract_manuscript_from_blocks(file_bytes)
+                if text:
+                    return [{"id": str(uuid.uuid4()), "text": text}]
+            except Exception as e:
+                print(f"Block extraction failed: {e}")
+                pass
+
     return _build_manuscript_from_sentence_objects(sentence_objects)
 
 
 def _seed_manuscript_if_empty(document, sentence_objects, file_bytes=None):
     if document.manuscript_content:
         return
-    paragraphs = _build_manuscript_paragraphs(file_bytes, sentence_objects)
+    file_name = document.file.name if document and document.file else None
+    paragraphs = _build_manuscript_paragraphs(file_bytes, sentence_objects, file_name)
     if paragraphs:
         document.manuscript_content = paragraphs
         document.save(update_fields=["manuscript_content"])
@@ -127,12 +140,17 @@ class DocumentViewSet(viewsets.ModelViewSet):
     permission_classes = (AllowAny,)
 
     def get_queryset(self):
+        if self.action == "list":
+            return Document.objects.all()
+            
         return Document.objects.prefetch_related(
             "citations__recommendations",
             "inserted_citations",
         )
 
     def get_serializer_class(self):
+        if self.action == "list":
+            return DocumentListSerializer
         if self.action in ("partial_update", "update"):
             return DocumentUpdateSerializer
         return DocumentSerializer
@@ -198,8 +216,14 @@ class DocumentViewSet(viewsets.ModelViewSet):
             file_bytes = document.file.read()
         finally:
             document.file.close()
-        sentence_objects = extract_sentences(file_bytes)
-        paragraphs = _build_manuscript_paragraphs(file_bytes, sentence_objects)
+            
+        file_name = document.file.name.lower()
+        if file_name.endswith('.docx'):
+            sentence_objects = extract_docx_sentences(file_bytes)
+        else:
+            sentence_objects = extract_sentences(file_bytes)
+            
+        paragraphs = _build_manuscript_paragraphs(file_bytes, sentence_objects, document.file.name)
         document.manuscript_content = paragraphs
         document.save(update_fields=["manuscript_content"])
         return Response(
@@ -386,18 +410,39 @@ class DocumentViewSet(viewsets.ModelViewSet):
         url_path="process-pdf",
     )
     def process_pdf(self, request):
-        if "pdf_file" not in request.FILES:
+        doc_id = request.data.get("document_id")
+        pdf_file = request.FILES.get("pdf_file") or request.FILES.get("file")
+        
+        document = None
+        if doc_id:
+            try:
+                document = Document.objects.get(id=doc_id)
+            except Document.DoesNotExist:
+                return Response(
+                    {"error": "Document not found."},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+                
+        if not pdf_file and not document:
             return Response(
-                {"error": "No pdf_file provided in request."},
+                {"error": "No file provided and no valid document_id specified."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        pdf_file = request.FILES["pdf_file"]
-        doc_id = request.data.get("document_id")
-
         try:
-            file_bytes = pdf_file.read()
-            sentence_objects = extract_sentences(file_bytes)
+            if pdf_file:
+                file_bytes = pdf_file.read()
+                file_name = pdf_file.name.lower()
+            else:
+                file_bytes = document.file.read()
+                file_name = document.file.name.lower()
+                
+            is_docx = file_name.endswith('.docx')
+            
+            if is_docx:
+                sentence_objects = extract_docx_sentences(file_bytes)
+            else:
+                sentence_objects = extract_sentences(file_bytes)
             
             if not sentence_objects:
                 return Response(
@@ -407,13 +452,6 @@ class DocumentViewSet(viewsets.ModelViewSet):
             
             results = detect_gaps(sentence_objects)
             
-            document = None
-            if doc_id:
-                try:
-                    document = Document.objects.get(id=doc_id)
-                except Document.DoesNotExist:
-                    document = None
-
             year_from, year_to = _year_range_from_request(request, document)
             enriched_results = fetch_recommendations(
                 results, year_from=year_from, year_to=year_to
@@ -582,3 +620,5 @@ class DocumentViewSet(viewsets.ModelViewSet):
             result["citation_gap_id"] = citation.id
 
         return Response(result, status=status.HTTP_200_OK)
+
+

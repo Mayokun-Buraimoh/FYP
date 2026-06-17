@@ -62,6 +62,31 @@ class DocumentSerializer(serializers.ModelSerializer):
         return None
 
 
+class DocumentListSerializer(serializers.ModelSerializer):
+    """Lightweight serializer for dashboard listing. Omits heavy JSON fields."""
+    file_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Document
+        fields = (
+            'id',
+            'title',
+            'file',
+            'file_url',
+            'uploaded_at',
+            'citation_style',
+            'year_from',
+            'year_to',
+        )
+        read_only_fields = ('uploaded_at', 'file_url')
+
+    def get_file_url(self, obj):
+        request = self.context.get('request')
+        if obj.file and request:
+            return request.build_absolute_uri(obj.file.url)
+        return None
+
+
 class DocumentUpdateSerializer(serializers.ModelSerializer):
     """PATCH only citation_style and manuscript_content."""
 

@@ -1,28 +1,30 @@
-# Integrating OpenAI with the Custom SciBERT Model
+# System Architecture: Hybrid AI Integration
 
-This document outlines the architectural integration between the custom-trained machine learning model and the cloud-based OpenAI LLM within the project. 
+This document outlines the architectural integration between the local machine learning models and the cloud-based OpenAI LLM within the project. 
 
-The architecture operates as a **Hybrid AI Pipeline** that utilizes both a domain-specific local model and a cloud-based general LLM to accurately identify citation gaps and recommend relevant literature.
+The system operates as a highly optimized **Hybrid AI Pipeline**. It uses specialized local models for heavy data processing and ranking, while delegating complex natural language generation tasks to the cloud (OpenAI).
 
-## Architecture Overview
+## The 3-Stage Pipeline
 
-### 1. Phase One: Gap Detection (Previous Work)
-When a user uploads a PDF, the document is parsed into individual sentences using `PyMuPDF` and `nltk`. This is where the custom-trained **SciBERT model** (`uniflow_brain`) operates. 
-* **The Role:** The SciBERT model acts as the *Intent Classifier*. It analyzes every sentence locally using PyTorch and determines **if** a citation is missing, and **what kind** of citation it is (e.g., *Methodology, Background, Result*). 
-* **The Advantage:** This is a highly specialized task. A massive general LLM is too slow and computationally expensive to read every single sentence of a 20-page PDF to find structural gaps. The specialized SciBERT model performs this domain-specific classification quickly and efficiently.
+### Stage 1: Local Gap Detection & Intent Classification (SciBERT)
+When a user uploads a PDF, the document is parsed into individual sentences using `PyMuPDF` and `nltk`.
+* **The Role:** The custom-trained **SciBERT model** (`uniflow_brain`) acts as the *Intent Classifier*. It analyzes every sentence locally using PyTorch and determines **if** a citation is missing, and **what kind** of citation it is (e.g., *Methodology, Background, Result*). 
+* **The Advantage:** A massive general LLM is too slow and expensive to read every sentence of a 20-page PDF to find gaps. The specialized SciBERT model performs this domain-specific classification instantly and locally.
 
-### 2. Phase Two: Semantic Querying & Retrieval (OpenAI Integration)
-Once the SciBERT model identifies a "citation gap" and tags it with a specific intent, it passes that critical metadata to the OpenAI integration component (`api_client.py`).
-* **The Role:** OpenAI acts as the *Semantic Reasoner*. It takes both the flagged sentence AND the local SciBERT intent tag (e.g., "Methodology"), using them together to deeply understand the context of the academic claim.
-* **The Advantage (Intent-Driven Querying):** Instead of relying on an LLM to hallucinate fake papers, the system uses OpenAI to generate highly specific search queries. Crucially, these queries are shaped by the local identification—for example, if SciBERT identified a "Methodology" gap, OpenAI crafts a query tailored to find papers presenting similar methods. It uses these targeted queries to search real academic databases (like OpenAlex, Crossref, or Semantic Scholar) to retrieve actual, verified real-world papers.
+### Stage 2: Intent-Driven Search & Retrieval (OpenAI + External APIs)
+Once SciBERT identifies a "citation gap" and tags it with a specific intent, the system searches for real-world papers to fill that gap.
+* **The Role:** OpenAI acts as the *Query Architect*. It takes both the flagged sentence and the local SciBERT intent tag to generate a highly targeted search query. The Python backend then takes this OpenAI-generated query and automatically searches massive, real-world academic databases (such as OpenAlex, Crossref, and Semantic Scholar).
+* **The Advantage:** Instead of relying on an LLM to hallucinate fake papers, the system uses OpenAI purely to craft the perfect search query, guaranteeing that the external APIs only retrieve real, verified, and peer-reviewed literature.
 
-### 3. Phase Three: Ranking & Recommendation (OpenAI Integration)
-Once the external academic databases return a list of potential candidate papers (e.g., 20 papers), OpenAI is utilized a second time for evaluation.
-* **The Role:** It reads the abstracts and metadata of the real papers and compares them against the original sentence in the uploaded PDF. 
-* **The Advantage:** It mathematically scores and ranks the candidate papers based on relevance to the specific claim, returning only the top 3-5 most accurate, peer-reviewed recommendations back to the React frontend.
+### Stage 3: Local Semantic Vector Ranking (all-MiniLM-L6-v2)
+The academic databases return a list of potential candidate papers (e.g., 20 papers). Instead of sending these back to OpenAI for ranking, the system performs a final, highly accurate local analysis.
+* **The Role:** A lightweight local semantic vector model (`all-MiniLM-L6-v2` via `sentence-transformers`) acts as the *Semantic Judge*.
+* **How it works:** It converts the original sentence from the PDF and the abstracts of the candidate papers into numerical vectors (embeddings). It then calculates the **Cosine Similarity** between them. 
+* **The Advantage:** This model truly understands context. If the highlighted sentence mentions "monetary requirements," it mathematically matches it with a paper about "financial costs," even if the exact keywords don't overlap. It ensures the final 3-5 recommendations are perfectly tailored to the sentence's context, all executed blazingly fast on the local machine.
 
 ## Summary
 
-This hybrid pipeline demonstrates an optimal division of labor in modern AI architectures:
-* The **SciBERT model** serves as the **"Diagnostic Engine"** that scans the document to diagnose where citations are missing and categorizes their structural intent.
-* The **OpenAI integration** serves as the **"Prescription Engine"** that understands the diagnosis naturally, searches the global literature library, and prescribes the exact real-world papers needed to fill the gap without hallucination.
+This architecture perfectly balances cost, speed, and accuracy:
+1. **Local SciBERT** acts as the *Diagnostician* to find the gaps.
+2. **Cloud OpenAI + APIs** acts as the *Search Engine* to figure out the best keywords and retrieve real literature.
+3. **Local MiniLM** acts as the *Judge* to analyze the search results and pick the best papers based on deep semantic meaning.

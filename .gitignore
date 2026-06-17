@@ -33,3 +33,4 @@ env/
 results/
 uniflow_brain/
 *.pdf
+CITELY_BACKEND/media/

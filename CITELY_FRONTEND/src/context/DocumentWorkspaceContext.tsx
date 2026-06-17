@@ -376,7 +376,14 @@ export function DocumentWorkspaceProvider({ documentId, pdfUrl, children }: Prov
             const blob = await response.blob();
 
             const formData = new FormData();
-            formData.append('pdf_file', blob, 'document.pdf');
+            
+            // Extract original filename or fallback to document.pdf
+            const fileName = document?.file?.split('/').pop() || document?.title || 'document.pdf';
+            const finalFileName = fileName.toLowerCase().endsWith('.pdf') || fileName.toLowerCase().endsWith('.docx') 
+                ? fileName 
+                : `${fileName}.pdf`;
+                
+            formData.append('pdf_file', blob, finalFileName);
             if (documentId) formData.append('document_id', documentId);
             if (yearFrom != null) formData.append('year_from', String(yearFrom));
             if (yearTo != null) formData.append('year_to', String(yearTo));

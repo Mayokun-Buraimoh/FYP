@@ -6,6 +6,10 @@ import xml.etree.ElementTree as ET
 import json
 
 import requests
+import hashlib
+import concurrent.futures
+from django.core.cache import cache
+
 from dotenv import load_dotenv               
 
 load_dotenv()
@@ -187,6 +191,11 @@ def get_openai_client():
 
 
 def generate_query(sentence, intent, context=None):
+    cache_key = "query_" + hashlib.md5(f"{sentence}|{intent}|{context}".encode('utf-8')).hexdigest()
+    cached_query = cache.get(cache_key)
+    if cached_query:
+        return cached_query
+
     client = get_openai_client()
     if client:
         try:
@@ -216,6 +225,7 @@ Instructions:
             query = response.choices[0].message.content.strip()
             query = re.sub(r'[`"\'\.]', '', query)
             print(f"OpenAI generated query: {query}")
+            cache.set(cache_key, query, timeout=86400)
             return query
         except Exception as e:
             print(f"OpenAI query generation failed: {e}. Falling back to default.")
@@ -237,6 +247,7 @@ Instructions:
     elif "motivation" in intent_lower or "problem" in intent_lower:
         base_query += " challenge novel perspective"
 
+    cache.set(cache_key, base_query, timeout=86400)
     return base_query
 
 
@@ -663,13 +674,22 @@ def _fetch_from_provider(provider, query, limit, year_from=None, year_to=None):
 
 def _search_literature(query, limit, year_from=None, year_to=None):
     """First provider with results (fast path for citation-gap recommendations)."""
+    cache_key = "search_" + hashlib.md5(f"{query}|{limit}|{year_from}|{year_to}".encode('utf-8')).hexdigest()
+    cached_results = cache.get(cache_key)
+    if cached_results:
+        print(f"Cache hit for query: {query[:80]}...")
+        return cached_results
+
     for provider in _configured_providers():
         print(f"Trying {provider} for query: {query[:80]}...")
         results = _fetch_from_provider(provider, query, limit, year_from, year_to)
         if results:
             print(f"  -> {len(results)} results from {provider}")
+            cache.set(cache_key, (results, provider), timeout=86400)
             return results, provider
         time.sleep(0.25)
+    
+    cache.set(cache_key, ([], None), timeout=3600)
     return [], None
 
 
@@ -849,7 +869,8 @@ def fetch_recommendations_for_sentence(sentence, intent=None, year_from=None, ye
 def fetch_recommendations(gap_list, year_from=None, year_to=None):
     """
     Fetch paper recommendations for top citation gaps using configured literature APIs.
-  OpenAlex is used first by default (no API key required).
+    OpenAlex is used first by default (no API key required).
+    Processes gaps concurrently to drastically reduce wait time.
     """
     enriched_gaps = []
     sorted_gaps = sorted(gap_list, key=lambda x: x.get("score", 0.0), reverse=True)
@@ -860,7 +881,7 @@ def fetch_recommendations(gap_list, year_from=None, year_to=None):
 
     sentence_to_idx = {gap_list[i].get("sentence", ""): i for i in range(len(gap_list))}
 
-    for gap in top_gaps:
+    def process_gap(gap):
         sentence = gap.get("sentence", "")
         intent = gap.get("intent", "")
 
@@ -882,9 +903,19 @@ def fetch_recommendations(gap_list, year_from=None, year_to=None):
 
         enriched_gap = gap.copy()
         enriched_gap["recommendations"] = recommendations
-        enriched_gaps.append(enriched_gap)
+        return enriched_gap
 
-    return enriched_gaps
+    with concurrent.futures.ThreadPoolExecutor(max_workers=PAPER_GAPS_TOP_K) as executor:
+        futures = [executor.submit(process_gap, gap) for gap in top_gaps]
+        for future in concurrent.futures.as_completed(futures):
+            try:
+                result = future.result()
+                enriched_gaps.append(result)
+            except Exception as e:
+                print(f"Error processing gap: {e}")
+
+    # Re-sort to maintain order after concurrent processing
+    return sorted(enriched_gaps, key=lambda x: x.get("score", 0.0), reverse=True)
 
 
 def search_papers(query, limit=None, year_from=None, year_to=None):
