@@ -205,7 +205,57 @@ export const SemanticDocumentViewer: React.FC<SemanticDocumentViewerProps> = ({
             );
             return [...withoutCitation, ...fromCitations];
         });
-    }, [embedded, workspace?.document?.citations]);
+    }, [embedded, workspace?.document?.citations, workspace?.document?.inserted_citations]);
+
+    useEffect(() => {
+        if (!embedded || !workspace?.document?.inserted_citations?.length) return;
+
+        const fromInserted = workspace.document.inserted_citations
+            .map((ic) => {
+                let position;
+                
+                if (ic.pdf_position) {
+                    position = ic.pdf_position;
+                } else if (ic.citation_gap) {
+                    const gap = workspace.document?.citations?.find(c => c.id === ic.citation_gap);
+                    if (gap && gap.bounding_boxes?.length) {
+                        position = mapBackendToScaledPosition({
+                            id: String(gap.id),
+                            text: gap.sentence,
+                            pageNumber: gap.page_number!,
+                            pageWidth: gap.page_width ?? 612,
+                            pageHeight: gap.page_height ?? 792,
+                            boundingBoxes: gap.bounding_boxes,
+                        });
+                    }
+                }
+                
+                if (!position) return null;
+
+                return {
+                    id: `inserted-${ic.id}`,
+                    position,
+                    content: { text: ic.sentence_text || ic.formatted_intext },
+                    text: ic.sentence_text || ic.formatted_intext,
+                    comment: 'Cited',
+                    status: 'cited' as const,
+                };
+            })
+            .filter(Boolean) as SemanticHighlight[];
+
+        setHighlights((prev) => {
+            const withoutInserted = prev.filter((h) => !String(h.id).startsWith('inserted-'));
+            
+            // Remove gaps that are now cited
+            const gapIds = workspace.document!.inserted_citations!
+                .filter(ic => ic.citation_gap)
+                .map(ic => `citation-${ic.citation_gap}`);
+            
+            const withoutCitedGaps = withoutInserted.filter(h => !gapIds.includes(String(h.id)));
+            
+            return [...withoutCitedGaps, ...fromInserted];
+        });
+    }, [embedded, workspace?.document?.inserted_citations, workspace?.document?.citations]);
 
     useEffect(() => {
         if (!embedded || !workspace?.manualSuggestions?.length) return;

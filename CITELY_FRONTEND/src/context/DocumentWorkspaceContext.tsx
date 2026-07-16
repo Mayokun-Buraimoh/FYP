@@ -70,7 +70,7 @@ interface DocumentWorkspaceContextValue {
     setCitationStyle: (style: CitationStyleId) => void;
     paragraphs: ManuscriptParagraph[];
     setParagraphs: React.Dispatch<React.SetStateAction<ManuscriptParagraph[]>>;
-    insertCitationForRecommendation: (rec: Recommendation, sentenceOverride?: string) => Promise<boolean>;
+    insertCitationForRecommendation: (rec: Recommendation, sentenceOverride?: string, pdfPosition?: any) => Promise<boolean>;
     insertedRecommendationIds: Set<number>;
     toast: string | null;
     clearToast: () => void;
@@ -413,7 +413,7 @@ export function DocumentWorkspaceProvider({ documentId, pdfUrl, children }: Prov
     }, [pdfUrl, documentId, yearFrom, yearTo, refreshDocument]);
 
     const insertCitationForRecommendation = useCallback(
-        async (rec: Recommendation, sentenceOverride?: string): Promise<boolean> => {
+        async (rec: Recommendation, sentenceOverride?: string, pdfPosition?: any): Promise<boolean> => {
             const sentence = (sentenceOverride || selectedSentence || '').trim();
             if (!sentence) {
                 setToast('Select a sentence in the PDF or Manuscript tab first.');
@@ -439,6 +439,7 @@ export function DocumentWorkspaceProvider({ documentId, pdfUrl, children }: Prov
                     anchor_id: anchorId,
                     formatted_intext: formatted,
                     csl_item: cslItem as unknown as Record<string, unknown>,
+                    pdf_position: pdfPosition,
                     manuscript_content: nextParagraphs,
                 });
 

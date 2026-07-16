@@ -26,6 +26,7 @@ class InsertedCitationSerializer(serializers.ModelSerializer):
             'sentence_text',
             'formatted_intext',
             'csl_item',
+            'pdf_position',
             'anchor_id',
             'created_at',
         )

@@ -275,6 +275,7 @@ class DocumentViewSet(viewsets.ModelViewSet):
         csl_item = request.data.get("csl_item") or {}
         sentence_text = request.data.get("sentence") or request.data.get("sentence_text") or ""
         anchor_id = request.data.get("anchor_id") or ""
+        pdf_position = request.data.get("pdf_position")
         citation_gap_id = request.data.get("citation_gap_id")
 
         if not formatted_intext:
@@ -318,6 +319,7 @@ class DocumentViewSet(viewsets.ModelViewSet):
             sentence_text=sentence_text,
             formatted_intext=formatted_intext,
             csl_item=csl_item,
+            pdf_position=pdf_position,
             anchor_id=anchor_id,
         )
 

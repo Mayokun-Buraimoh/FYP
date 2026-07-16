@@ -198,6 +198,7 @@ export interface InsertedCitationRecord {
     sentence_text: string;
     formatted_intext: string;
     csl_item: Record<string, unknown>;
+    pdf_position?: any;
     anchor_id: string;
     created_at: string;
 }
@@ -238,6 +239,7 @@ export interface InsertCitationPayload {
     anchor_id?: string;
     formatted_intext: string;
     csl_item: Record<string, unknown>;
+    pdf_position?: any;
     manuscript_content?: ManuscriptParagraph[];
     citation_gap_id?: number;
 }

@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useRef } from 'react';
-import { Loader2 } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Loader2, Sparkles } from 'lucide-react';
 import { useDocumentWorkspace } from '../context/DocumentWorkspaceContext';
 import { patchDocument, type ManuscriptParagraph } from '../lib/api';
 import {
@@ -24,6 +24,7 @@ export function ManuscriptEditor() {
     const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const rootIdRef = useRef<string>(MANUSCRIPT_ROOT_ID);
     const lastSyncedHtml = useRef<string>('');
+    const [popupRect, setPopupRect] = useState<DOMRect | null>(null);
 
     const scheduleSave = useCallback(
         (next: ManuscriptParagraph[]) => {
@@ -72,16 +73,42 @@ export function ManuscriptEditor() {
     }, [ctx, updateManuscript]);
 
     const handleSelection = useCallback(() => {
-        if (!ctx) return;
+        if (!ctx || !editorRef.current) return;
         const sel = window.getSelection();
-        if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return;
+        if (!sel || sel.rangeCount === 0 || sel.isCollapsed) {
+            setPopupRect(null);
+            return;
+        }
+        
+        // Ensure selection is inside the editor
+        if (!editorRef.current.contains(sel.anchorNode)) {
+            setPopupRect(null);
+            return;
+        }
+
         const text = sel.toString().trim();
-        if (!text) return;
+        if (!text) {
+            setPopupRect(null);
+            return;
+        }
+        
         ctx.setSelectedSentence(text);
+        setPopupRect(sel.getRangeAt(0).getBoundingClientRect());
+        
         if (text.length >= MIN_SELECTION_LENGTH) {
             ctx.setManuscriptAnchorId(rootIdRef.current);
         }
     }, [ctx]);
+
+    useEffect(() => {
+        document.addEventListener('selectionchange', handleSelection);
+        return () => document.removeEventListener('selectionchange', handleSelection);
+    }, [handleSelection]);
+
+    // Hide popup when scrolling to keep it anchored to text
+    const handleScroll = useCallback(() => {
+        setPopupRect(null);
+    }, []);
 
     useEffect(() => {
         return () => {
@@ -145,32 +172,46 @@ export function ManuscriptEditor() {
     const canFindCitations = selectedLen >= MIN_SELECTION_LENGTH;
 
     return (
-        <div className="flex-1 overflow-y-auto bg-white flex flex-col">
-            {selectedLen > 0 && (
-                <div
-                    className={`shrink-0 mt-4 px-4 py-3 bg-blue-50 border border-blue-100 rounded-xl flex flex-wrap items-center gap-3 ${MANUSCRIPT_COLUMN_CLASS}`}
+        <div className="flex-1 overflow-y-auto bg-white flex flex-col relative" onScroll={handleScroll}>
+            {popupRect && selectedLen > 0 && (
+                <div 
+                    className="fixed z-[100] animate-in fade-in zoom-in-95 duration-200 pointer-events-auto"
+                    style={{
+                        top: Math.max(10, popupRect.top - 50),
+                        left: popupRect.left + (popupRect.width / 2),
+                        transform: 'translate(-50%, 0)'
+                    }}
                 >
-                    <p className="text-[12px] text-slate-600 flex-1 min-w-[200px]">
-                        {canFindCitations ? (
-                            <>
-                                Selected: &ldquo;
-                                {ctx.selectedSentence!.length > 80
-                                    ? `${ctx.selectedSentence!.slice(0, 80)}…`
-                                    : ctx.selectedSentence}
-                                &rdquo;
-                            </>
-                        ) : (
-                            <>Select at least {MIN_SELECTION_LENGTH} characters (a full sentence).</>
-                        )}
-                    </p>
-                    <button
-                        type="button"
-                        disabled={!canFindCitations || ctx.isFindingCitations}
-                        onClick={() => void ctx.findCitationsForSelection()}
-                        className="px-4 py-2 bg-[#003366] text-white text-[12px] font-bold rounded-lg hover:bg-[#00254a] disabled:opacity-50"
-                    >
-                        {ctx.isFindingCitations ? 'Finding…' : 'Find citations'}
-                    </button>
+                    <div className="bg-slate-800 text-white rounded-xl px-4 py-2 text-sm font-bold shadow-xl border border-slate-700/50 flex items-center gap-3">
+                        <span className="opacity-90 tracking-wide truncate max-w-[200px]">
+                            {ctx.selectedSentence}
+                        </span>
+                        <div className="w-px h-4 bg-slate-600 rounded-full" />
+                        <button
+                            type="button"
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                void ctx.findCitationsForSelection();
+                            }}
+                            disabled={!canFindCitations || ctx.isFindingCitations}
+                            className="text-[#3399FF] hover:text-[#66B2FF] flex items-center gap-1.5 transition-colors disabled:opacity-50 whitespace-nowrap"
+                        >
+                            {ctx.isFindingCitations ? (
+                                <>
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                    Processing...
+                                </>
+                            ) : canFindCitations ? (
+                                <>
+                                    <Sparkles className="w-3.5 h-3.5" />
+                                    Find citations
+                                </>
+                            ) : (
+                                <span className="text-slate-400 font-medium text-[11px]">Select {MIN_SELECTION_LENGTH}+ chars</span>
+                            )}
+                        </button>
+                    </div>
                 </div>
             )}
             <div className={`${MANUSCRIPT_COLUMN_CLASS} py-10 min-h-full flex-1`}>

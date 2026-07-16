@@ -8,6 +8,7 @@ import json
 import requests
 import hashlib
 import concurrent.futures
+import threading
 from django.core.cache import cache
 
 from dotenv import load_dotenv               
@@ -62,17 +63,20 @@ PAPER_RECOMMENDATIONS_TOP_K = _env_int("PAPER_RECOMMENDATIONS_TOP_K", 10)
 PAPER_GAPS_TOP_K = _env_int("PAPER_GAPS_TOP_K", 5)
 
 _SEMANTIC_MODEL = None
+_SEMANTIC_MODEL_LOCK = threading.Lock()
 
 def get_semantic_model():
     global _SEMANTIC_MODEL
     if _SEMANTIC_MODEL is None:
-        try:
-            from sentence_transformers import SentenceTransformer
-            print("Loading local semantic model (all-MiniLM-L6-v2)...")
-            _SEMANTIC_MODEL = SentenceTransformer('all-MiniLM-L6-v2')
-        except Exception as e:
-            print(f"Error loading semantic model: {e}")
-            _SEMANTIC_MODEL = "FAILED"
+        with _SEMANTIC_MODEL_LOCK:
+            if _SEMANTIC_MODEL is None:
+                try:
+                    from sentence_transformers import SentenceTransformer
+                    print("Loading local semantic model (all-MiniLM-L6-v2)...")
+                    _SEMANTIC_MODEL = SentenceTransformer('all-MiniLM-L6-v2')
+                except Exception as e:
+                    print(f"Error loading semantic model: {e}")
+                    _SEMANTIC_MODEL = "FAILED"
     return _SEMANTIC_MODEL if _SEMANTIC_MODEL != "FAILED" else None
 
 

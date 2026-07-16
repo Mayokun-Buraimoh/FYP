@@ -61,6 +61,7 @@ class InsertedCitation(models.Model):
     sentence_text = models.TextField(blank=True)
     formatted_intext = models.TextField()
     csl_item = models.JSONField(default=dict)
+    pdf_position = models.JSONField(null=True, blank=True)
     anchor_id = models.CharField(max_length=64, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 

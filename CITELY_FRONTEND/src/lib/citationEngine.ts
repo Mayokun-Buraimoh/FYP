@@ -193,18 +193,18 @@ export async function formatIntextCitation(
     try {
         return await runWithProcessor(styleId, items, (processor) => {
             const citationItems = items.map((item) => ({ id: item.id }));
-            const result = processor.previewCitationCluster(
+            const result = processor.processCitationCluster(
                 { citationItems, properties: { noteIndex: 0 } },
                 [],
                 []
             );
-            if (Array.isArray(result) && result[1]?.length) {
-                return stripHtml(String(result[1][0]));
+            if (Array.isArray(result) && Array.isArray(result[1]) && result[1].length > 0) {
+                const formatted = result[1][0][1];
+                if (typeof formatted === 'string') {
+                    return stripHtml(formatted);
+                }
             }
-            if (typeof result === 'string') {
-                return stripHtml(result);
-            }
-            return stripHtml(String(result));
+            return '';
         });
     } catch (err) {
         console.error('citeproc formatIntextCitation failed', err);
