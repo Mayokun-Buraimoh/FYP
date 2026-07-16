@@ -4,8 +4,6 @@ import re
 import html as html_module
 import fitz  # PyMuPDF
 import nltk
-from transformers import AutoTokenizer, AutoModelForSequenceClassification
-import torch
 import json
 
 # Ensure necessary NLTK data is available
@@ -50,6 +48,8 @@ _DEVICE = None
 def get_model():
     global _MODEL, _TOKENIZER, _LABEL_MAPPING, _DEVICE
     if _MODEL is None:
+        from transformers import AutoTokenizer, AutoModelForSequenceClassification
+        import torch
         model_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "uniflow_brain")
         
         if not os.path.exists(model_dir):
@@ -336,6 +336,7 @@ def detect_gaps(sentence_objects):
     """
     Detect citation gaps in a list of sentence objects.
     """
+    import torch
     model, tokenizer, label_mapping, device = get_model()
     
     results = []
