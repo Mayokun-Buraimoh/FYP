@@ -193,7 +193,7 @@ export async function formatIntextCitation(
     try {
         return await runWithProcessor(styleId, items, (processor) => {
             const citationItems = items.map((item) => ({ id: item.id }));
-            const result = processor.processCitationCluster(
+            const result = (processor as any).processCitationCluster(
                 { citationItems, properties: { noteIndex: 0 } },
                 [],
                 []
